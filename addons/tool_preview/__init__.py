@@ -1,5 +1,3 @@
-from . import dependencies
-dependencies.preload_modules()
 import bpy
 import sys
 import os
@@ -11,7 +9,7 @@ bl_info = {
     "author": "Your Name",
     "version": (1, 0, 1),
     "blender": (4, 2, 0),
-    "location": "Ctrl + Shift + T",
+    "location": "Ctrl + Shift + P",
     "description": "Shows PySide6 window with video previews for active built-in tools",
     "category": "Interface",
 }
@@ -21,9 +19,6 @@ tool_preview_window = None
 addon_keymaps = []
 
 
-# ---------------------------
-# Video Viewer Widget
-# ---------------------------
 class VideoViewer(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -63,9 +58,6 @@ class VideoViewer(QtWidgets.QWidget):
         self.current_video_path = ""
 
 
-# ---------------------------
-# PySide6 Tool Preview Window
-# ---------------------------
 class ToolPreviewWindow(VideoViewer):
     def __init__(self, addon_path):
         super().__init__()
@@ -100,9 +92,6 @@ class ToolPreviewWindow(VideoViewer):
             print("Video not found for tool:", tool_id)
 
 
-# ---------------------------
-# Blender Operator
-# ---------------------------
 class WM_OT_show_tool_preview(bpy.types.Operator):
     bl_idname = "wm.show_tool_preview"
     bl_label = "Show Tool Video Preview Window"
@@ -125,9 +114,6 @@ class WM_OT_show_tool_preview(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# ---------------------------
-# Keymap for shortcut
-# ---------------------------
 def register_keymap():
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
@@ -135,7 +121,7 @@ def register_keymap():
         km = kc.keymaps.new(name="Window", space_type='EMPTY')
         kmi = km.keymap_items.new(
             WM_OT_show_tool_preview.bl_idname,
-            type='T',
+            type='P',
             value='PRESS',
             ctrl=True,
             shift=True
@@ -149,10 +135,7 @@ def unregister_keymap():
     addon_keymaps.clear()
 
 
-# ---------------------------
-# Register Classes
-# ---------------------------
-classes = (WM_OT_show_tool_preview, ToolPreviewWindow)
+classes = (WM_OT_show_tool_preview,)
 
 
 def register():
