@@ -1,150 +1,240 @@
-import bpy
-import sys
-import os
-
-from PySide6 import QtWidgets, QtGui, QtCore, QtMultimedia, QtMultimediaWidgets
-
 bl_info = {
     "name": "Tool Video Preview Window",
     "author": "Your Name",
-    "version": (1, 0, 1),
+    "version": (2, 1, 0),
     "blender": (4, 2, 0),
     "location": "Ctrl + Shift + P",
-    "description": "Shows PySide6 window with video previews for active built-in tools",
+    "description": "Live MP4 preview window for built-in tools",
     "category": "Interface",
 }
 
-# Keep track of window and shortcut
+import bpy
+import os
+
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtMultimedia import QMediaPlayer
+from PySide6.QtMultimediaWidgets import QVideoWidget
+
+
+# ----------------------------------------------------------
+# Globals
+# ----------------------------------------------------------
+
 tool_preview_window = None
+tool_preview_running = False
+
+
+# ----------------------------------------------------------
+# Qt Preview Window
+# ----------------------------------------------------------
+
+class ToolPreviewWindow(QtWidgets.QWidget):
+
+    def __init__(self, addon_path):
+        super().__init__()
+
+        self.setWindowTitle("Tool Video Preview")
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        self.resize(480, 320)
+
+        self.video_folder = os.path.join(addon_path, "video")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # Video widget (auto resize)
+        self.video_widget = QVideoWidget()
+        self.video_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding
+        )
+
+        layout.addWidget(self.video_widget)
+
+        # Media player
+        self.player = QMediaPlayer(self)
+        self.player.setVideoOutput(self.video_widget)
+
+        # Loop video
+        self.player.mediaStatusChanged.connect(self.loop_video)
+
+        self.current_tool_id = ""
+
+    # ------------------------------------------------------
+
+    def loop_video(self, status):
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            self.player.setPosition(0)
+            self.player.play()
+
+    # ------------------------------------------------------
+
+    def check_active_tool(self, context):
+
+        if not context.workspace:
+            return
+
+        tool = context.workspace.tools.from_space_view3d_mode(context.mode)
+
+        if not tool:
+            return
+
+        if tool.idname != self.current_tool_id:
+            self.current_tool_id = tool.idname
+            self.load_video(tool.idname)
+
+    # ------------------------------------------------------
+
+    def load_video(self, tool_id):
+
+        video_path = os.path.join(self.video_folder, f"{tool_id}.mp4")
+
+        if os.path.exists(video_path):
+
+            self.player.stop()
+
+            url = QtCore.QUrl.fromLocalFile(video_path)
+            self.player.setSource(url)
+            self.player.play()
+
+            print("Playing:", tool_id)
+
+        else:
+            self.player.stop()
+            print("Missing video:", tool_id)
+
+    # ------------------------------------------------------
+    # When window closes → allow relaunch
+    # ------------------------------------------------------
+
+    def closeEvent(self, event):
+        global tool_preview_window
+        global tool_preview_running
+
+        if self.player:
+            self.player.stop()
+            self.player.deleteLater()
+
+        tool_preview_window = None
+        tool_preview_running = False
+
+        event.accept()
+
+
+# ----------------------------------------------------------
+# Modal Operator
+# ----------------------------------------------------------
+
+class WM_OT_tool_preview_modal(bpy.types.Operator):
+    bl_idname = "wm.tool_preview_modal"
+    bl_label = "Tool Preview Modal"
+
+    _timer = None
+
+    def execute(self, context):
+
+        global tool_preview_window
+        global tool_preview_running
+
+        # Prevent double start
+        if tool_preview_running:
+            return {'CANCELLED'}
+
+        # Ensure Qt app exists
+        app = QtWidgets.QApplication.instance()
+        if not app:
+            QtWidgets.QApplication([])
+
+        addon_path = os.path.dirname(__file__)
+        tool_preview_window = ToolPreviewWindow(addon_path)
+        tool_preview_window.show()
+
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.2, window=context.window)
+        wm.modal_handler_add(self)
+
+        tool_preview_running = True
+
+        return {'RUNNING_MODAL'}
+
+    # ------------------------------------------------------
+
+    def modal(self, context, event):
+
+        global tool_preview_window
+        global tool_preview_running
+
+        # If window closed → cancel modal cleanly
+        if not tool_preview_window or not tool_preview_window.isVisible():
+            self.cancel(context)
+            return {'CANCELLED'}
+
+        if event.type == 'TIMER':
+            tool_preview_window.check_active_tool(context)
+
+        # Keep Qt responsive
+        QtWidgets.QApplication.processEvents()
+
+        return {'PASS_THROUGH'}
+
+    # ------------------------------------------------------
+
+    def cancel(self, context):
+
+        global tool_preview_running
+        global tool_preview_window
+
+        wm = context.window_manager
+        wm.event_timer_remove(self._timer)
+
+        tool_preview_running = False
+        tool_preview_window = None
+
+
+# ----------------------------------------------------------
+# Registration + Hotkey
+# ----------------------------------------------------------
+
 addon_keymaps = []
 
 
-class VideoViewer(QtWidgets.QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Tool Video Preview")
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-        self.resize(400, 300)
+def register():
+    bpy.utils.register_class(WM_OT_tool_preview_modal)
 
-        # Video player
-        self.player = QtMultimedia.QMediaPlayer(self)
-        self.video_widget = QtMultimediaWidgets.QVideoWidget(self)
-        self.player.setVideoOutput(self.video_widget)
-
-        # Layout
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(self.video_widget)
-
-        # State
-        self.current_tool = ""
-        self.current_video_path = ""
-
-    def play_video(self, video_path: str):
-        if not os.path.exists(video_path):
-            print(f"Video not found: {video_path}")
-            return False
-
-        if self.current_video_path == video_path:
-            return True  # already playing
-
-        self.player.stop()
-        self.player.setSource(QtCore.QUrl.fromLocalFile(video_path))
-        self.player.play()
-        self.current_video_path = video_path
-        return True
-
-    def stop_video(self):
-        self.player.stop()
-        self.current_video_path = ""
-
-
-class ToolPreviewWindow(VideoViewer):
-    def __init__(self, addon_path):
-        super().__init__()
-        self.video_folder = os.path.join(addon_path, "video")
-
-        # Timer to update active tool
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.update_tool_video)
-        self.timer.start(200)  # every 200ms
-
-    def update_tool_video(self):
-        tool = bpy.context.workspace.tools.from_space_view3d_mode(bpy.context.mode)
-        if not tool:
-            self.stop_video()
-            self.current_tool = ""
-            return
-
-        tool_id = tool.idname
-        if tool_id == self.current_tool:
-            return
-
-        self.current_tool = tool_id
-        video_path = os.path.join(self.video_folder, f"{tool_id}.gif")
-        print("Active tool:", tool_id)
-        print("Video path:", video_path)
-
-        if os.path.exists(video_path):
-            if not self.play_video(video_path):
-                print("Failed to play video:", video_path)
-        else:
-            self.stop_video()
-            print("Video not found for tool:", tool_id)
-
-
-class WM_OT_show_tool_preview(bpy.types.Operator):
-    bl_idname = "wm.show_tool_preview"
-    bl_label = "Show Tool Video Preview Window"
-
-    def execute(self, context):
-        global tool_preview_window
-
-        app = QtWidgets.QApplication.instance()
-        if not app:
-            app = QtWidgets.QApplication([])
-
-        addon_path = os.path.dirname(__file__)
-        if tool_preview_window is None:
-            tool_preview_window = ToolPreviewWindow(addon_path)
-
-        tool_preview_window.show()
-        tool_preview_window.raise_()
-        tool_preview_window.activateWindow()
-
-        return {'FINISHED'}
-
-
-def register_keymap():
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
+
     if kc:
         km = kc.keymaps.new(name="Window", space_type='EMPTY')
+
         kmi = km.keymap_items.new(
-            WM_OT_show_tool_preview.bl_idname,
-            type='P',
-            value='PRESS',
+            WM_OT_tool_preview_modal.bl_idname,
+            'P',
+            'PRESS',
             ctrl=True,
             shift=True
         )
+
         addon_keymaps.append((km, kmi))
 
 
-def unregister_keymap():
+def unregister():
+    global tool_preview_window
+    global tool_preview_running
+
     for km, kmi in addon_keymaps:
         km.keymap_items.remove(kmi)
+
     addon_keymaps.clear()
 
+    bpy.utils.unregister_class(WM_OT_tool_preview_modal)
 
-classes = (WM_OT_show_tool_preview,)
+    if tool_preview_window:
+        tool_preview_window.close()
+
+    tool_preview_window = None
+    tool_preview_running = False
 
 
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-    register_keymap()
-
-
-def unregister():
-    unregister_keymap()
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
+if __name__ == "__main__":
+    register()
