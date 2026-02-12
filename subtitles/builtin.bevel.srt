@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:03,500
+Activation de l'outil Bevel.
+
+2
+00:00:04,000 --> 00:00:12,000
+Création d'un biseau sur les arêtes verticales.
+
+3
+00:00:13,000 --> 00:00:22,000
+Application du biseau sur les coins supérieurs.

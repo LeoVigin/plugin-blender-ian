@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:04,000
+Sélection de l'outil "Inset Faces".
+
+2
+00:00:04,500 --> 00:00:08,500
+Création d'une nouvelle face à l'intérieur de la face du haut.
+
+3
+00:00:09,000 --> 00:01:14,000
+Répétition de l'opération sur les faces latérales.

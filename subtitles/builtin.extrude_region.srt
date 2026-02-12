@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:04,500
+Utilisation classique de l'outil Extrude Region.
+
+2
+00:00:05,000 --> 00:00:10,000
+Extrusion vers le haut sur l'axe Z.
+
+3
+00:00:11,000 --> 00:01:15,000
+Extrusion d'une face latérale sur l'axe Y.

@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:03,500
+Sélection de l'outil "Loop Cut and Slide".
+
+2
+00:00:04,000 --> 00:00:09,000
+Ajout d'une boucle de géométrie verticale.
+
+3
+00:00:10,000 --> 00:00:18,000
+Ajout d'une boucle horizontale et ajustement de sa position.

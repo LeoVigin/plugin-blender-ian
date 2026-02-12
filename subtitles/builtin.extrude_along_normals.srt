@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:03,000
+Sélection de l'outil Extrude Region.
+
+2
+00:00:03,500 --> 00:00:06,500
+Extrusion de la face avant.
+
+3
+00:00:07,000 --> 00:00:10,000
+Utilisation de Shrink/Fatten pour ajuster la taille.
+
+4
+00:00:11,000 --> 00:00:15,000
+Extrusion de la face supérieure.
+
+5
+00:00:16,000 --> 00:00:20,000
+Plusieurs extrusions rapides pour créer des volumes.

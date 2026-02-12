@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:04,000
+Sélection de l'outil Scale.
+
+2
+00:00:04,500 --> 00:00:12,000
+Mise à l'échelle sur l'axe X pour étirer le cube.
+
+3
+00:00:13,000 --> 00:00:24,000
+Mise à l'échelle sur l'axe Z pour l'aplatir.

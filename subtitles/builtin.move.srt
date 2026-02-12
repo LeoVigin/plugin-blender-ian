@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:04,000
+Activation de l'outil de déplacement.
+
+2
+00:00:04,500 --> 00:00:10,000
+Déplacement libre du cube dans la scène.
+
+3
+00:00:11,000 --> 00:00:20,000
+Ajustement de la position sur les axes X, Y et Z.

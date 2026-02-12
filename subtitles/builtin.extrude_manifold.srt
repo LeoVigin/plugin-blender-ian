@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:03,500
+Sélection de l'outil "Extrude Manifold".
+
+2
+00:00:04,000 --> 00:00:09,000
+Extrusion vers l'intérieur pour creuser le cube.
+
+3
+00:00:10,000 --> 00:01:14,000
+L'outil supprime automatiquement les faces inutiles.

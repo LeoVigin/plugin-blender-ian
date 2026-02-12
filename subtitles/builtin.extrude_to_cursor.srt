@@ -1,0 +1,11 @@
+1
+00:00:00,000 --> 00:00:03,500
+Sélection de l'outil "Extrude to Cursor".
+
+2
+00:00:04,000 --> 00:00:08,000
+Extrusion directe vers la position du clic.
+
+3
+00:00:08,500 --> 00:00:14,000
+Création d'une forme libre en suivant le curseur.
